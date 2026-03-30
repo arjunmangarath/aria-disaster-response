@@ -1,0 +1,57 @@
+# Environment
+.env
+*.env
+.env.*
+
+# Firebase service account (NEVER commit)
+config/firebase_service_account.json
+config/*.json
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+
+# Virtual environments
+venv/
+.venv/
+env/
+.env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Streamlit
+.streamlit/secrets.toml
+
+# Google credentials
+application_default_credentials.json
+service_account*.json
+gcloud/
+
+# Logs
+*.log
+logs/
+
+# Test artifacts
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Node (for Maps MCP server)
+node_modules/
+package-lock.json
