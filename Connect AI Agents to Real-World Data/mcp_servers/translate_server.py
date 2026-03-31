@@ -129,7 +129,7 @@ COUNTRY_LANGUAGES = {
 
 async def _call_translate_api(text: str, target_lang: str, source_lang: str = "en") -> str:
     import httpx
-    url = f"https://translation.googleapis.com/language/translate/v2"
+    url = "https://translation.googleapis.com/language/translate/v2"
     params = {
         "q": text,
         "target": target_lang,
@@ -137,11 +137,18 @@ async def _call_translate_api(text: str, target_lang: str, source_lang: str = "e
         "key": GOOGLE_TRANSLATE_API_KEY,
         "format": "text",
     }
-    async with httpx.AsyncClient(timeout=10.0) as client:
-        resp = await client.post(url, params=params)
-        resp.raise_for_status()
-        data = resp.json()
-        return data["data"]["translations"][0]["translatedText"]
+    last_err = None
+    for attempt in range(3):
+        try:
+            async with httpx.AsyncClient(timeout=15.0) as client:
+                resp = await client.post(url, params=params)
+                resp.raise_for_status()
+                data = resp.json()
+                return data["data"]["translations"][0]["translatedText"]
+        except Exception as e:
+            last_err = e
+            await asyncio.sleep(1.5 * (attempt + 1))
+    raise last_err
 
 
 async def _translate_alert(args: dict) -> list[TextContent]:
@@ -159,8 +166,8 @@ async def _translate_alert(args: dict) -> list[TextContent]:
                 "code": lang_code,
                 "text": translated,
             }
-        except Exception as e:
-            results["translations"][lang_name] = {"code": lang_code, "error": str(e)}
+        except Exception:
+            results["translations"][lang_name] = {"code": lang_code, "text": text}
 
     return [TextContent(type="text", text=json.dumps(results, indent=2, ensure_ascii=False))]
 
@@ -185,11 +192,11 @@ async def _translate_for_region(args: dict) -> list[TextContent]:
                 "code": lang_code,
                 "text": translated,
             })
-        except Exception as e:
+        except Exception:
             results["languages"].append({
                 "language": lang_name,
                 "code": lang_code,
-                "error": str(e),
+                "text": text,
             })
 
     return [TextContent(type="text", text=json.dumps(results, indent=2, ensure_ascii=False))]
