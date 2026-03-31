@@ -1,3 +1,4 @@
+import json as _json
 import os
 import tempfile
 from urllib.parse import quote_plus
@@ -13,6 +14,57 @@ def _secret(key: str, default: str = "") -> str:
         return st.secrets.get(key, os.getenv(key, default))
     except Exception:
         return os.getenv(key, default)
+
+
+def _fix_json_control_chars(s: str) -> str:
+    """
+    Escape literal control characters inside JSON string values.
+    TOML multi-line strings convert \\n escape sequences into real newlines,
+    which then break JSON parsing (control chars are not allowed in strings).
+    """
+    result = []
+    in_string = False
+    escape_next = False
+    for ch in s:
+        if escape_next:
+            result.append(ch)
+            escape_next = False
+        elif ch == "\\":
+            result.append(ch)
+            escape_next = True
+        elif ch == '"':
+            in_string = not in_string
+            result.append(ch)
+        elif in_string and ord(ch) < 0x20:
+            if ch == "\n":
+                result.append("\\n")
+            elif ch == "\r":
+                result.append("\\r")
+            elif ch == "\t":
+                result.append("\\t")
+            else:
+                result.append(f"\\u{ord(ch):04x}")
+        else:
+            result.append(ch)
+    return "".join(result)
+
+
+def _write_sa_json(raw: str) -> str:
+    """Fix, validate, and write a service account JSON string to a temp file.
+    Returns the temp file path, or empty string on failure."""
+    if not raw:
+        return ""
+    try:
+        fixed = _fix_json_control_chars(raw)
+        _json.loads(fixed)  # validate
+        tmp = tempfile.NamedTemporaryFile(
+            mode="w", suffix=".json", delete=False, encoding="utf-8"
+        )
+        tmp.write(fixed)
+        tmp.close()
+        return tmp.name
+    except Exception:
+        return ""
 
 
 # ─── Google Cloud ────────────────────────────────────────
@@ -42,37 +94,15 @@ ALLOYDB_DSN = (
 # ─── Firebase ────────────────────────────────────────────
 FIREBASE_DATABASE_URL = _secret("FIREBASE_DATABASE_URL", "")
 
-# Write Firebase service account JSON from secret to a temp file
-_firebase_json = _secret("FIREBASE_SERVICE_ACCOUNT_JSON", "")
-if _firebase_json:
-    try:
-        _tmp = tempfile.NamedTemporaryFile(
-            mode="w", suffix=".json", delete=False, encoding="utf-8"
-        )
-        _tmp.write(_firebase_json)
-        _tmp.close()
-        FIREBASE_CREDENTIALS_PATH = _tmp.name
-    except Exception:
-        FIREBASE_CREDENTIALS_PATH = _secret(
-            "FIREBASE_CREDENTIALS_PATH", "config/firebase_service_account.json"
-        )
-else:
-    FIREBASE_CREDENTIALS_PATH = _secret(
-        "FIREBASE_CREDENTIALS_PATH", "config/firebase_service_account.json"
-    )
+_firebase_path = _write_sa_json(_secret("FIREBASE_SERVICE_ACCOUNT_JSON", ""))
+FIREBASE_CREDENTIALS_PATH = _firebase_path or _secret(
+    "FIREBASE_CREDENTIALS_PATH", "config/firebase_service_account.json"
+)
 
 # ─── Google Service Account (Vertex AI on Streamlit Cloud) ──
-_gcp_sa_json = _secret("GOOGLE_SERVICE_ACCOUNT_JSON", "")
-if _gcp_sa_json:
-    try:
-        _sa_tmp = tempfile.NamedTemporaryFile(
-            mode="w", suffix=".json", delete=False, encoding="utf-8"
-        )
-        _sa_tmp.write(_gcp_sa_json)
-        _sa_tmp.close()
-        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = _sa_tmp.name
-    except Exception:
-        pass
+_gcp_path = _write_sa_json(_secret("GOOGLE_SERVICE_ACCOUNT_JSON", ""))
+if _gcp_path:
+    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = _gcp_path
 
 # ─── Push all secrets into os.environ so MCP subprocesses inherit them ───────
 # MCP servers run as separate Python subprocesses; they inherit os.environ.
