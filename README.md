@@ -1,8 +1,8 @@
-# 🆘 ARIA — Adaptive Response Intelligence Agent
+# ARIA — Adaptive Response Intelligence Agent
 
-> **Gen AI Academy APAC Edition — Track 2: Connect AI Agents to Real-World Data**
+An AI-powered disaster response platform that connects a single agent to seven real-world data sources via the **Model Context Protocol (MCP)**.
 
-[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://aria-disaster-response.streamlit.app)
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://aria-disaster-response-01.streamlit.app)
 [![Python 3.11](https://img.shields.io/badge/python-3.11-blue.svg)](https://www.python.org)
 [![Google ADK](https://img.shields.io/badge/Google%20ADK-MCP-4285F4?logo=google)](https://google.github.io/adk-docs)
 [![Vertex AI](https://img.shields.io/badge/Vertex%20AI-Gemini%202.5-34A853?logo=google-cloud)](https://cloud.google.com/vertex-ai)
@@ -18,13 +18,11 @@ During natural disasters in the APAC region, **critical minutes are lost** becau
 - Civilian alerts are **only in English** — unreachable for hundreds of millions of people
 - Weather and hazard conditions require **manual cross-checking** across multiple platforms
 
-These delays cost lives.
-
 ---
 
 ## The Solution
 
-**ARIA** is a unified AI disaster response platform — one agent, three stakeholder roles, seven real-world data sources connected via the **Model Context Protocol (MCP)**.
+**ARIA** is a unified AI disaster response platform — one agent, three stakeholder roles, seven real-world data sources.
 
 Report any disaster → ARIA automatically:
 - Geocodes the location and pulls active GDACS alerts
@@ -51,8 +49,6 @@ All in under 60 seconds.
 ┌─────────────────────────────────────────────────────────────────┐
 │              Google ADK Agent (Gemini 2.5 Flash)                │
 │                    Vertex AI · us-central1                      │
-│                                                                 │
-│  SYSTEM PROMPT: ARIA — Role-aware disaster response coordinator │
 └──┬────────┬────────┬────────┬────────┬────────┬────────┬───────┘
    │        │        │        │        │        │        │
    ▼        ▼        ▼        ▼        ▼        ▼        ▼
@@ -85,46 +81,23 @@ Platform  API    (free)  Search   Search    API       DB
 
 ## Key Features
 
-### 🤖 Real-World Agent Intelligence
+### Real-World Agent Intelligence
 - **10 MCP tool calls** per disaster response — all automated
 - Gemini 2.5 Flash reasons across all tool outputs to synthesize a coherent response
 - Structured 4-section output: Command Center · Field Responder · Civilian · Translations
 
-### 🗺️ Live Disaster Map
+### Live Disaster Map
 - Dark-theme folium map with disaster epicenter, affected zone ring
 - Shelter markers (color-coded by available capacity)
 - Hospital markers with emergency bed count
-- Built from live AlloyDB AI vector search results
 
-### 📊 Impact Estimation
-- Population affected (regional density)
-- Casualty range estimate
-- Structures at risk
-- Critical infrastructure assessment
-
-### 🌐 Multilingual Alerts (South India Focus)
+### Multilingual Alerts (South India Focus)
 Translates civilian alerts into:
 **Tamil · Telugu · Kannada · Malayalam** · Hindi · Marathi · Gujarati · Bengali · Bahasa Indonesia · Filipino · Thai · Vietnamese
 
-### 📡 Live Streaming UI
+### Live Streaming UI
 - Response streams token-by-token as Gemini generates it
 - Tool call badges appear in real time as each MCP server is called
-- No blank waiting screen
-
-### 📋 History & Export
-- Last 3 scenarios saved with one-click reload
-- Download full report as `.txt`
-- Google Cloud services checklist shows what fired per run
-
----
-
-## Demo Scenarios
-
-| Scenario | Disaster | Location |
-|---|---|---|
-| 🌊 Chennai Earthquake | Magnitude 6.2 | Chennai, India |
-| 🌀 Jakarta Flood | Category 5 monsoon flooding | Jakarta, Indonesia |
-| 🌪️ Manila Typhoon | Category 4 landfall | Manila, Philippines |
 
 ---
 
@@ -133,7 +106,7 @@ Translates civilian alerts into:
 ```
 ├── main.py                      # Streamlit app — UI, streaming, layout
 ├── requirements.txt
-├── runtime.txt                  # Python 3.11 for Streamlit Cloud
+├── runtime.txt                  # Python 3.11
 ├── packages.txt                 # Node.js for Maps MCP server
 ├── agent/
 │   └── aria_agent.py            # Google ADK agent + 7 MCP toolsets
@@ -170,7 +143,7 @@ Translates civilian alerts into:
 
 ```bash
 git clone https://github.com/arjunmangarath/aria-disaster-response.git
-cd "aria-disaster-response/Connect AI Agents to Real-World Data"
+cd aria-disaster-response
 pip install -r requirements.txt
 ```
 
@@ -195,7 +168,7 @@ python db/seed_data.py
 
 ```bash
 gcloud auth application-default login
-gcloud config set project aria-disaster-response
+gcloud config set project YOUR_PROJECT_ID
 ```
 
 ### 5. Run
@@ -219,32 +192,6 @@ FIREBASE_DATABASE_URL
 GOOGLE_SERVICE_ACCOUNT_JSON   ← Vertex AI credentials
 FIREBASE_SERVICE_ACCOUNT_JSON ← Firebase Admin credentials
 ```
-
----
-
-## How It Works — Step by Step
-
-1. User describes a disaster and location in the sidebar
-2. ARIA geocodes the location via **Google Maps Platform**
-3. ADK agent calls all 10 MCP tools in sequence:
-   - `maps_geocode` → precise coordinates
-   - `get_active_alerts` → live GDACS feed
-   - `get_weather` + `get_hazard_conditions` → Open-Meteo
-   - `find_shelters` + `find_hospitals` → **AlloyDB AI pgvector semantic search**
-   - `get_emergency_contacts` + `get_global_emergency_numbers` → AlloyDB AI
-   - `translate_for_region` → **Google Translate** into 8+ languages
-   - `push_alert` → **Firebase Realtime Database**
-4. Gemini 2.5 synthesizes all tool outputs into 4 structured sections
-5. Response streams live into the Streamlit UI
-6. Map renders shelter/hospital pins from AlloyDB results
-
----
-
-## Built For
-
-**Gen AI Academy APAC Edition**
-Track 2: Connect AI Agents to Real-World Data
-Google Cloud × Hack2Skill
 
 ---
 
