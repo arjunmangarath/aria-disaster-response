@@ -88,7 +88,7 @@ ALLOYDB_DATABASE = _secret("ALLOYDB_DATABASE", "aria_db")
 ALLOYDB_DSN = (
     f"postgresql://{ALLOYDB_USER}:{quote_plus(ALLOYDB_PASSWORD)}"
     f"@{ALLOYDB_HOST}:{ALLOYDB_PORT}/{ALLOYDB_DATABASE}"
-    f"?sslmode=require"
+    f"?connect_timeout=10"
 )
 
 # ─── Firebase ────────────────────────────────────────────

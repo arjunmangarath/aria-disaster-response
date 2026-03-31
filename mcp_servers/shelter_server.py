@@ -28,11 +28,16 @@ def _haversine_km(lat1, lon1, lat2, lon2) -> float:
 
 
 async def _get_query_embedding(query: str) -> list[float]:
-    from vertexai.language_models import TextEmbeddingModel
-    from google.cloud import aiplatform
-    aiplatform.init(project=GOOGLE_CLOUD_PROJECT, location=VERTEX_AI_LOCATION)
-    model = TextEmbeddingModel.from_pretrained("text-embedding-004")
-    return model.get_embeddings([query])[0].values
+    loop = asyncio.get_event_loop()
+
+    def _embed():
+        from vertexai.language_models import TextEmbeddingModel
+        from google.cloud import aiplatform
+        aiplatform.init(project=GOOGLE_CLOUD_PROJECT, location=VERTEX_AI_LOCATION)
+        model = TextEmbeddingModel.from_pretrained("text-embedding-004")
+        return model.get_embeddings([query])[0].values
+
+    return await asyncio.wait_for(loop.run_in_executor(None, _embed), timeout=30.0)
 
 
 @app.list_tools()
@@ -109,7 +114,7 @@ async def _find_shelters(args: dict) -> list[TextContent]:
         embedding = await _get_query_embedding(query_text)
         embedding_str = "[" + ",".join(str(v) for v in embedding) + "]"
 
-        conn = await asyncpg.connect(ALLOYDB_DSN)
+        conn = await asyncio.wait_for(asyncpg.connect(ALLOYDB_DSN), timeout=15.0)
         try:
             sql = f"""
                 SELECT id, name, region, country, latitude, longitude,
@@ -171,7 +176,7 @@ async def _find_hospitals(args: dict) -> list[TextContent]:
         embedding = await _get_query_embedding(query_text)
         embedding_str = "[" + ",".join(str(v) for v in embedding) + "]"
 
-        conn = await asyncpg.connect(ALLOYDB_DSN)
+        conn = await asyncio.wait_for(asyncpg.connect(ALLOYDB_DSN), timeout=15.0)
         try:
             sql = f"""
                 SELECT id, name, region, country, latitude, longitude,
@@ -214,7 +219,7 @@ async def _find_hospitals(args: dict) -> list[TextContent]:
 
 async def _update_shelter_occupancy(args: dict) -> list[TextContent]:
     try:
-        conn = await asyncpg.connect(ALLOYDB_DSN)
+        conn = await asyncio.wait_for(asyncpg.connect(ALLOYDB_DSN), timeout=15.0)
         try:
             await conn.execute(
                 "UPDATE shelters SET current_occupancy=$1, updated_at=NOW() WHERE id=$2",

@@ -19,11 +19,16 @@ app = Server("contacts-mcp")
 
 
 async def _get_query_embedding(query: str) -> list[float]:
-    from vertexai.language_models import TextEmbeddingModel
-    from google.cloud import aiplatform
-    aiplatform.init(project=GOOGLE_CLOUD_PROJECT, location=VERTEX_AI_LOCATION)
-    model = TextEmbeddingModel.from_pretrained("text-embedding-004")
-    return model.get_embeddings([query])[0].values
+    loop = asyncio.get_event_loop()
+
+    def _embed():
+        from vertexai.language_models import TextEmbeddingModel
+        from google.cloud import aiplatform
+        aiplatform.init(project=GOOGLE_CLOUD_PROJECT, location=VERTEX_AI_LOCATION)
+        model = TextEmbeddingModel.from_pretrained("text-embedding-004")
+        return model.get_embeddings([query])[0].values
+
+    return await asyncio.wait_for(loop.run_in_executor(None, _embed), timeout=30.0)
 
 
 @app.list_tools()
@@ -108,7 +113,7 @@ async def _get_emergency_contacts(args: dict) -> list[TextContent]:
         embedding = await _get_query_embedding(query_text)
         embedding_str = "[" + ",".join(str(v) for v in embedding) + "]"
 
-        conn = await asyncpg.connect(ALLOYDB_DSN)
+        conn = await asyncio.wait_for(asyncpg.connect(ALLOYDB_DSN), timeout=15.0)
         try:
             sql = f"""
                 SELECT agency, region, country, disaster_types,

@@ -39,7 +39,7 @@ try:
 except Exception:
     pass
 
-_MCP_TIMEOUT = 60.0
+_MCP_TIMEOUT = 120.0
 
 SYSTEM_PROMPT = """
 You are ARIA (Adaptive Response Intelligence Agent), an AI-powered disaster response coordinator
