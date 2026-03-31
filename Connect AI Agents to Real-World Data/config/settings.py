@@ -73,6 +73,27 @@ if _gcp_sa_json:
     except Exception:
         pass
 
+# ─── Push all secrets into os.environ so MCP subprocesses inherit them ───────
+# MCP servers run as separate Python subprocesses; they inherit os.environ.
+# Without this block, secrets from st.secrets would not reach them.
+_env_exports = {
+    "GOOGLE_CLOUD_PROJECT":      GOOGLE_CLOUD_PROJECT,
+    "GOOGLE_CLOUD_LOCATION":     VERTEX_AI_LOCATION,
+    "VERTEX_AI_LOCATION":        VERTEX_AI_LOCATION,
+    "GOOGLE_MAPS_API_KEY":       GOOGLE_MAPS_API_KEY,
+    "GOOGLE_TRANSLATE_API_KEY":  GOOGLE_TRANSLATE_API_KEY,
+    "ALLOYDB_HOST":              ALLOYDB_HOST,
+    "ALLOYDB_PORT":              str(ALLOYDB_PORT),
+    "ALLOYDB_USER":              ALLOYDB_USER,
+    "ALLOYDB_PASSWORD":          ALLOYDB_PASSWORD,
+    "ALLOYDB_DATABASE":          ALLOYDB_DATABASE,
+    "FIREBASE_DATABASE_URL":     FIREBASE_DATABASE_URL,
+    "FIREBASE_CREDENTIALS_PATH": FIREBASE_CREDENTIALS_PATH,
+}
+for _k, _v in _env_exports.items():
+    if _v:
+        os.environ[_k] = _v
+
 # ─── External APIs ───────────────────────────────────────
 GDACS_API_URL = _secret(
     "GDACS_API_URL",
