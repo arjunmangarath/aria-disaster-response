@@ -5,6 +5,7 @@ Built with Google ADK, connecting to 7 MCP servers for real-world disaster data.
 
 import asyncio
 import os
+import subprocess
 import sys
 from pathlib import Path
 
@@ -28,6 +29,17 @@ os.environ.setdefault("GOOGLE_CLOUD_LOCATION", VERTEX_AI_LOCATION)
 
 MCP_DIR = str(Path(__file__).parent.parent / "mcp_servers")
 PYTHON = sys.executable
+
+# Pre-install Maps MCP package so npx doesn't download it on every agent call
+try:
+    subprocess.run(
+        ["npm", "install", "-g", "@modelcontextprotocol/server-google-maps"],
+        capture_output=True, timeout=120, check=False,
+    )
+except Exception:
+    pass
+
+_MCP_TIMEOUT = 60.0
 
 SYSTEM_PROMPT = """
 You are ARIA (Adaptive Response Intelligence Agent), an AI-powered disaster response coordinator
@@ -96,7 +108,7 @@ def _make_toolset(script_name: str) -> McpToolset:
                 args=[os.path.join(MCP_DIR, script_name)],
                 env={**os.environ},
             ),
-            timeout=30.0,
+            timeout=_MCP_TIMEOUT,
         )
     )
 
@@ -116,7 +128,7 @@ def _build_agent() -> Agent:
                         args=["-y", "@modelcontextprotocol/server-google-maps"],
                         env={**os.environ, "GOOGLE_MAPS_API_KEY": os.getenv("GOOGLE_MAPS_API_KEY", "")},
                     ),
-                    timeout=30.0,
+                    timeout=_MCP_TIMEOUT,
                 )
             ),
             _make_toolset("weather_server.py"),
