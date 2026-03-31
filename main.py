@@ -217,6 +217,7 @@ defaults = {
     "session_id": str(uuid.uuid4()),
     "history": [],
     "severity": "MODERATE",
+    "last_error": "",
 }
 for k, v in defaults.items():
     if k not in st.session_state:
@@ -271,7 +272,7 @@ def run_agent(disaster_input: str, label: str = "") -> str:
             break
         elif event_type == "error":
             st.session_state.running = False
-            st.error(f"Agent error: {content}")
+            st.session_state.last_error = str(content)
             return ""
         elif event_type == "tool_call":
             tool_calls.append(content)
@@ -529,6 +530,11 @@ if st.session_state.response:
         st.markdown("</div>", unsafe_allow_html=True)
 
 else:
+    # Show any error that survived the rerun
+    if st.session_state.get("last_error"):
+        st.error(f"Agent error: {st.session_state.last_error}")
+        st.session_state.last_error = ""
+
     # Empty state + demo buttons
     render_empty_state()
 
